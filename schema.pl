@@ -86,7 +86,7 @@ CODE
 #    * ICON can be a either a direct path to an icon or a valid icon name
 #    * Category names are case insensitive. (X-XFCE and x_xfce are equivalent)
 
-require "$ENV{HOME}/.config/obmenu-generator/config.pl";
+require "$ENV{HOME}/.config/menutray/config.pl";
 
 our $SCHEMA = [
     #          COMMAND             LABEL                ICON
