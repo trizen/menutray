@@ -1,0 +1,4 @@
+menutray
+========
+
+A simple GTK+ application menu tray.
