@@ -92,7 +92,7 @@ our $SCHEMA = [
     #          COMMAND             LABEL                ICON
     {item => ['pcmanfm',       'File Manager',      'file-manager']},
     {item => ['xterm',         'Terminal',          'terminal']},
-    {item => ['google-chrome', 'Web Browser',       'web-browser']},
+    {item => ['chromium',      'Web Browser',       'web-browser']},
     {item => ['gmrun',         'Run command',       'system-run']},
     {item => ['pidgin',        'Instant messaging', 'system-users']},
 

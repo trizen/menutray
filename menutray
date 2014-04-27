@@ -121,11 +121,11 @@ HELP
 if (@ARGV) {
     while (defined(my $arg = shift @ARGV)) {
         if ($arg eq '-i') {
-            $icons       = 1;
-            $create_menu = 1;
+            $icons = 1;
+            $create_menu //= 1;
         }
         elsif ($arg eq '-g') {
-            $create_menu = 1;
+            $create_menu //= 1;
         }
         elsif ($arg eq '-r') {
             $reconfigure = 1;
@@ -138,6 +138,7 @@ if (@ARGV) {
             exit 0;
         }
         elsif ($arg eq '-gtk3' or $arg eq '--gtk3') {
+            $create_menu //= 1;
             $gtk_v = '3';
         }
         elsif ($arg eq '-h' or $arg eq '--help' or $arg eq '-?') {
@@ -205,7 +206,7 @@ sub dump_configuration {
     require Data::Dump;
     open my $config_fh, '>', $config_file
       or die "Can't open file '${config_file}' for write: $!";
-    my $dumped_config = q{our $CONFIG = } . Data::Dump::dump(\%CONFIG);
+    my $dumped_config = q{our $CONFIG = } . Data::Dump::dump(\%CONFIG) . "\n";
     print $config_fh $config_documentation, $dumped_config;
     close $config_fh;
 }
