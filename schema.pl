@@ -5,7 +5,7 @@
 =for comment
 
     item:       add an item inside the menu               {item => ['command', 'label', 'icon']},
-    cat:        add a category inside the menu             {cat => ['name', 'label", 'icon']},
+    cat:        add a category inside the menu             {cat => ['name', 'label', 'icon']},
     sep:        horizontal line separator                  {sep => undef}
     raw:        any valid Perl code                        {raw => q(...)},
     tree:       custom category with items                {tree => [[{...}], 'label', 'icon']},
@@ -66,6 +66,7 @@ CODE
                 Name => "Item name",
                 Exec => "command",
                 Icon => "icon-name",
+                Comment => "tooltip text",
              },
              #{
                 # ...
