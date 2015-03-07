@@ -13,23 +13,23 @@
 
 ### Installation process:
 
-    - place the `menutray` file inside your PATH
-    - place the `schema.pl` file inside `/etc/xdg/menutray` or `~/.config/menutray/`
+- place the `menutray` file inside your PATH
+- place the `schema.pl` file inside `/etc/xdg/menutray` or `~/.config/menutray/`
 
 ### Running:
 
-    - to generate a new menu with icons, execute: `menutray -i`
-    - to generate a simple menu, without icons, execute: `menutray -g`
-    - for creating a Gtk3 menu, simply append the `-gtk3` to one of the above commands.
-    - to load an already generated menu, run `menutray` without any arguments.
+- to generate a new menu with icons, execute: `menutray -i`
+- to generate a simple menu, without icons, execute: `menutray -g`
+- for creating a Gtk3 menu, simply append the `-gtk3` to one of the above commands.
+- to load an already generated menu, run `menutray` without any arguments.
 
 
 ### Customizing:
 
-    - the `schema.pl` file provides a direct customization access for the menu that will be generated.
-    - adding or removing a given entry from the `schema.pl` file is reflected inside the generated menu.
+- the `schema.pl` file provides a direct customization access for the menu that will be generated.
+- adding or removing a given entry from the `schema.pl` file is reflected inside the generated menu.
 
 ### Packages:
 
-    - Arch Linux: https://aur.archlinux.org/packages/menutray/
-    - Frugalware: http://www10.frugalware.org/pub/linux/frugalware/frugalware-current/source/xapps-extra/menutray/
+- Arch Linux: https://aur.archlinux.org/packages/menutray/
+- Frugalware: http://www10.frugalware.org/pub/linux/frugalware/frugalware-current/source/xapps-extra/menutray/
