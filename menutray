@@ -18,7 +18,7 @@
 # Program: menutray
 # License: GPLv3
 # Created on: 03 March 2011
-# Latest edit on: 06 Match 2015
+# Latest edit on: 07 March 2015
 
 # Websites: https://github.com/trizen/menutray
 #           http://trizenx.blogspot.ro/2012/02/menutray.html
@@ -173,7 +173,6 @@ EOD
 my %CONFIG = (
     'Linux::DesktopFiles' => {
 
-        keep_empty_categories   => 0,
         keep_unknown_categories => 1,
         unknown_category_key    => 'other',
 
@@ -249,6 +248,7 @@ my $desk_obj = Linux::DesktopFiles->new(
     keys_to_keep =>
       [@{$CONFIG{name_keys}}, 'Exec', $icons ? 'Icon' : (), $CONFIG{set_tooltips} ? @{$CONFIG{tooltip_keys}} : ()],
 
+    keep_empty_categories => 0,
     case_insensitive_cats => 1,
                                        );
 
@@ -353,53 +353,47 @@ END_OF_CAT
 }
 
 sub push_app {
-    my (undef, $cat_name, $icon_name) = @_;
+    my ($entries, $cat_name, $icon_name) = @_;
+
+    my @menu_items;
+    foreach my $entry (@{$entries}) {
+        my $item;
+        my $item_var = '$app';
+
+        foreach my $nkey (@{$CONFIG{name_keys}}) {
+            if (defined $entry->{$nkey}) {
+                $item = "{\n" . new_item($item_var, $entry->{$nkey}) . system_command($item_var, $entry->{Exec});
+                last;
+            }
+        }
+
+        $item // next;    # skip entries without a `Name` field
+
+        if ($CONFIG{set_tooltips}) {
+            foreach my $tkey (@{$CONFIG{tooltip_keys}}) {
+                if (defined $entry->{$tkey}) {
+                    $item .= tooltip($item_var, $entry->{$tkey});
+                    last;
+                }
+            }
+        }
+
+        if ($icons) {
+            $item .= select_icon($item_var, $entry->{Icon} || ($entry->{Exec} =~ /^(\S+)/));
+        }
+        push @menu_items, $item . <<"APPEND";
+    \$apps->append($item_var);
+}
+APPEND
+    }
+
+    @menu_items || return;    # skip creating empty categories
 
     my $cat_var = '$cat';
     begin_category($cat_var, $cat_name, $icon_name);
 
-    $generated_menu .= join(
-        q{},
-        (
-         map $_->[1],
-         sort { $a->[0] cmp $b->[0] }
-           map [lc($_) => $_],
-         map {
-
-             my $item;
-             my $item_var = '$app';
-
-             foreach my $nkey (@{$CONFIG{name_keys}}) {
-                 if (defined $_->{$nkey}) {
-                     $item = "{\n" . new_item($item_var, $_->{$nkey}) . system_command($item_var, $_->{Exec});
-                     last;
-                 }
-             }
-
-             defined($item)
-               ? do {
-
-                 if ($CONFIG{set_tooltips}) {
-                     foreach my $tkey (@{$CONFIG{tooltip_keys}}) {
-                         if (defined $_->{$tkey}) {
-                             $item .= tooltip($item_var, $_->{$tkey});
-                             last;
-                         }
-                     }
-                 }
-
-                 if ($icons) {
-                     $item .= select_icon($item_var, $_->{Icon} || ($_->{Exec} =~ /^(\S+)/));
-                 }
-                 $item . <<"APPEND";
-    \$apps->append($item_var);
-}
-APPEND
-               }
-               : ();
-           } @{$_[0]}
-        )
-      )
+    $generated_menu .= join(q{}, map $_->[1], sort { $a->[0] cmp $b->[0] }
+                              map [lc($_) => $_], @menu_items)
       . end_category($cat_var);
     1;
 }
@@ -582,4 +576,4 @@ dump_configuration() if $update_config;
 #-f $menufile ? (do($menufile) || die "$0: Can't run the menu file '${menufile}': $!") : usage();
 
 ## Load the menu with 'exec'
--f $menufile ? exec($^X, $menufile) : do { output_usage(); exit 1 };    # this cleans up some memory and works nicely with Gtk3
+(-f $menufile) ? exec($^X, $menufile) : do { output_usage(); exit 1 };  # this cleans up some memory and works nicely with Gtk3
