@@ -14,7 +14,7 @@
 ### Installation process:
 
 - place the `menutray` file inside your PATH
-- place the `schema.pl` file inside `/etc/xdg/menutray` or `~/.config/menutray/`
+- place the `schema.pl` file inside `/etc/xdg/menutray/` or `~/.config/menutray/`
 
 ### Running:
 
