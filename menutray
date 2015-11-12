@@ -473,19 +473,19 @@ EOT
                       {
                        Exec    => "$CONFIG{editor} $menufile",
                        Name    => "Menu",
-                       Icon    => $icon,
+                       Icon    => 'gtk-edit',
                        Comment => 'Open the menu file for inspection',
                       },
                       {
                        Exec    => "$CONFIG{editor} $schema_file",
                        Name    => "Schema",
-                       Icon    => $icon,
+                       Icon    => 'gtk-edit',
                        Comment => 'Open the schema file to customize the menu'
                       },
                       {
                        Exec    => "$CONFIG{editor} $config_file",
                        Name    => "Config",
-                       Icon    => $icon,
+                       Icon    => 'gtk-edit',
                        Comment => 'Open the configuration file'
                       },
                      ],
