@@ -20,7 +20,7 @@
 
 - to generate a new menu with icons, execute: `menutray -i`
 - to generate a simple menu, without icons, execute: `menutray -g`
-- for creating a Gtk3 menu, simply append the `-gtk3` to one of the above commands.
+- for creating a Gtk3 menu, simply append `-gtk3` to one of the above commands.
 - to load an already generated menu, run `menutray` without any arguments.
 
 
@@ -32,4 +32,3 @@
 ### Packages:
 
 - Arch Linux: https://aur.archlinux.org/packages/menutray/
-- Frugalware: http://www10.frugalware.org/pub/linux/frugalware/frugalware-current/source/xapps-extra/menutray/
