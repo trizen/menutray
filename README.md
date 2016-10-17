@@ -13,6 +13,11 @@ options:
     -r    : regenerate the configuration file
     -gtk3 : use Gtk3 instead of Gtk2
 
+other:
+    -S <file>  : path to the schema.pl file
+    -C <file>  : path to the config.pl file
+    -o <file>  : path to the menu.pl file
+
 help:
     -h  : print this message and exit
     -v  : print version number and exit
@@ -21,4 +26,5 @@ help:
 * Config : ~/.config/menutray/config.pl
 * Schema : ~/.config/menutray/schema.pl
 ```
+
 Installation process: https://github.com/trizen/menutray/blob/master/INSTALL.md
