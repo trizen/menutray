@@ -15,71 +15,6 @@
     regenerate: regenerate menu                     {regenerate => ['label', 'icon']},
     exit:       quit menu                                 {exit => ['label', 'icon']},
 
-----------------------------------------------------------------------------------------------------
---------------------------------------------- EXAMPLES ---------------------------------------------
-----------------------------------------------------------------------------------------------------
-
-============
-'raw' entry:
-============
-
-    {raw => <<'CODE'},
-{
-
-    # Create the main menu entry
-    my $entry = 'Gtk2::ImageMenuItem'->new('My menu');
-
-    # Set icon
-    $entry->set_image('Gtk2::Image'->new_from_icon_name('applications-system','menu'));
-
-    # Create the submenu
-    my $submenu = Gtk2::Menu->new;
-
-    # Create a new menu item
-    my $item = Gtk2::ImageMenuItem->new('Terminal');
-
-    # Set icon
-    $item->set_image('Gtk2::Image'->new_from_icon_name('terminal','menu'));
-
-    # Set a signal (activates on click)
-    $item->signal_connect('activate',sub {system 'xterm &'});
-
-    # Append the item to the submenu
-    $submenu->append($item);
-
-    # Set the submenu to the entry item
-    $entry->set_submenu($submenu);
-
-    # Append the entry to the main menu
-    $menu->append($entry);
-}
-CODE
-
-=============
-'tree' entry:
-=============
-
-    {
-     tree => [
-            [
-             {
-                Name => "Item name",
-                Exec => "command",
-                Icon => "icon-name",
-                Comment => "tooltip text",
-             },
-             #{
-                # ...
-             #},
-            ],
-
-            'My category', 'icon-name'
-        ]
-    },
-
-----------------------------------------------------------------------------------------------------
-----------------------------------------------------------------------------------------------------
-
 =cut
 
 # NOTE:
@@ -90,12 +25,11 @@ CODE
 require "$ENV{HOME}/.config/menutray/config.pl";
 
 our $SCHEMA = [
-    #          COMMAND             LABEL                ICON
-    {item => ['pcmanfm',       'File Manager',      'file-manager']},
-    {item => ['xterm',         'Terminal',          'terminal']},
-    {item => ['chromium',      'Web Browser',       'web-browser']},
-    {item => ['gmrun',         'Run command',       'system-run']},
-    {item => ['pidgin',        'Instant messaging', 'system-users']},
+    #          COMMAND                 LABEL                ICON
+    {item => ['xdg-open .',        'File Manager',      'file-manager']},
+    {item => ['xterm',             'Terminal',          'terminal']},
+    {item => ['xdg-open http://',  'Web Browser',       'web-browser']},
+    {item => ['gmrun',             'Run command',       'system-run']},
 
     {sep => undef},
 
@@ -112,7 +46,7 @@ our $SCHEMA = [
     {cat => ['settings',    'Settings',    'applications-accessories']},
     {cat => ['system',      'System',      'applications-system']},
 
-    #{cat => ['qt',          'QT Applications',    'qtlogo']},
+    #{cat => ['qt',          'QT Applications',    'qt4logo']},
     #{cat => ['gtk',         'GTK Applications',   'gnome-applications']},
     #{cat => ['x_xfce',      'XFCE Applications',  'applications-other']},
     #{cat => ['gnome',       'GNOME Applications', 'gnome-applications']},
@@ -123,4 +57,71 @@ our $SCHEMA = [
     {sep        => undef},
     {regenerate => ['Regenerate', 'gtk-refresh']},
     {exit       => ['Exit', 'exit']},
-]
+];
+
+__END__
+----------------------------------------------------------------------------------------------------
+--------------------------------------------- EXAMPLES ---------------------------------------------
+----------------------------------------------------------------------------------------------------
+
+#
+## 'raw' entry:
+#
+
+{
+  raw => q(
+            {
+                # Create the main menu entry
+                my $entry = 'Gtk2::ImageMenuItem'->new('My menu');
+
+                # Set icon
+                $entry->set_image('Gtk2::Image'->new_from_icon_name('applications-system','menu'));
+
+                # Create the submenu
+                my $submenu = Gtk2::Menu->new;
+
+                # Create a new menu item
+                my $item = Gtk2::ImageMenuItem->new('Terminal');
+
+                # Set icon
+                $item->set_image('Gtk2::Image'->new_from_icon_name('terminal','menu'));
+
+                # Set a signal (activates on click)
+                $item->signal_connect('activate',sub {system 'xterm &'});
+
+                # Append the item to the submenu
+                $submenu->append($item);
+
+                # Set the submenu to the entry item
+                $entry->set_submenu($submenu);
+
+                # Append the entry to the main menu
+                $menu->append($entry);
+            }
+        )
+},
+
+#
+## 'tree' entry
+#
+
+{
+  tree => [
+        [
+         {
+            Name => "Item name",
+            Exec => "command",
+            Icon => "icon-name",
+            Comment => "tooltip text",
+         },
+         #{
+            # ...
+         #},
+        ],
+
+        'My category', 'icon-name'
+    ]
+},
+
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------

@@ -18,7 +18,7 @@
 # Program: menutray
 # License: GPLv3
 # Created on: 03 March 2011
-# Latest edit on: 03 March 2016
+# Latest edit on: 17 October 2016
 
 # Websites: https://github.com/trizen/menutray
 #           http://trizenx.blogspot.ro/2012/02/menutray.html
@@ -28,7 +28,7 @@ use Encode qw(decode_utf8);
 use Linux::DesktopFiles 0.08;
 
 my $pkgname = 'menutray';
-my $version = '0.45';
+my $version = '0.46';
 my $gtk_v   = '2';          # Version of GTK+
 
 my ($icons, $create_menu, $reconfigure, $update_config);
@@ -46,7 +46,7 @@ my $xdg_config_home = "$home_dir/.config";
 my $config_dir  = "$xdg_config_home/$pkgname";
 my $config_file = "$config_dir/config.pl";
 my $schema_file = "$config_dir/schema.pl";
-my $menufile    = "$config_dir/menu.pl";
+my $menu_file   = "$config_dir/menu.pl";
 
 sub output_usage {
     print <<"HELP";
@@ -59,11 +59,16 @@ options:
     -r    : regenerate the configuration file
     -gtk3 : use Gtk3 instead of Gtk2
 
+other:
+    -S <file>  : path to the schema.pl file
+    -C <file>  : path to the config.pl file
+    -o <file>  : path to the menu.pl file
+
 help:
     -h  : print this message and exit
     -v  : print version number and exit
 
-* Menu   : $menufile
+* Menu   : $menu_file
 * Config : $config_file
 * Schema : $schema_file\n
 HELP
@@ -104,7 +109,7 @@ my $config_help = <<"HELP";
 
 
 || PATHS
-    | desktop_files_paths   : Absolute paths which contains .desktop files.
+    | desktop_files_paths   : Absolute paths which contain .desktop files.
                               Example: [
                                 '/usr/share/applications',
                                 "\$ENV{HOME}/.local/share/applications",
@@ -115,7 +120,7 @@ my $config_help = <<"HELP";
 || NOTES
     | Regular expressions:
         * use qr/RE/ instead of 'RE'
-        * use qr/RE/i for case insenstive mode
+        * use qr/RE/i for case insensitive mode
 HELP
 
 if (@ARGV) {
@@ -136,6 +141,15 @@ if (@ARGV) {
         elsif ($arg eq '-v') {
             print "$pkgname $version\n";
             exit 0;
+        }
+        elsif ($arg eq '-S') {
+            $schema_file = shift(@ARGV) // die "$0: option '-S' requires an argument!\n";
+        }
+        elsif ($arg eq '-C') {
+            $config_file = shift(@ARGV) // die "$0: options '-C' requires an argument!\n";
+        }
+        elsif ($arg eq '-o') {
+            $menu_file = shift(@ARGV) // die "$0: option '-o' requires an argument!\n";
         }
         elsif ($arg eq '-gtk3' or $arg eq '--gtk3') {
             $create_menu //= 1;
@@ -161,7 +175,7 @@ my $config_documentation = <<"EOD";
 #!/usr/bin/perl
 
 # $pkgname - configuration file
-# This file will be updated automatically every time when is needed.
+# This file will be updated automatically.
 # Any additional comment and/or indentation will be lost.
 
 =for comment
@@ -184,10 +198,7 @@ my %CONFIG = (
         terminal               => 'xterm',
         terminalization_format => q{%s -e '%s'},
 
-        desktop_files_paths => [
-            '/usr/share/applications',
-            '/usr/local/share/applications',
-        ],
+        desktop_files_paths => ['/usr/share/applications', '/usr/local/share/applications',],
     },
 
     set_tooltips => 1,
@@ -231,12 +242,9 @@ if (not -e $schema_file) {
 
 require $schema_file;    # Load the configuration files
 
-# Remove user's defined values
-my @valid_keys = grep exists $CONFIG{$_}, keys %{$CONFIG};
+# Remove invalid user-defined keys
+my @valid_keys = grep exists $CONFIG{$_}, keys %$CONFIG;
 @CONFIG{@valid_keys} = @{$CONFIG}{@valid_keys};
-
-# Keep user's defined values
-#@CONFIG{keys %{$CONFIG}} = values %{$CONFIG};
 
 if ($CONFIG{VERSION} != $version) {
     $update_config = 1;
@@ -252,7 +260,6 @@ my $desk_obj = Linux::DesktopFiles->new(
     keys_to_keep =>
       [@{$CONFIG{name_keys}}, 'Exec', $icons ? 'Icon' : (), $CONFIG{set_tooltips} ? @{$CONFIG{tooltip_keys}} : ()],
 
-    keep_empty_categories => 0,
     case_insensitive_cats => 1,
                                        );
 
@@ -475,7 +482,7 @@ EOT
             push_app(
                      [
                       {
-                       Exec    => "$CONFIG{editor} $menufile",
+                       Exec    => "$CONFIG{editor} $menu_file",
                        Name    => "Menu",
                        Icon    => 'gtk-edit',
                        Comment => 'Open the menu file for inspection',
@@ -532,7 +539,12 @@ QUIT
 
             require Cwd;
             my $regenerate_exec =
-              join(q{ }, $^X, quotemeta(Cwd::abs_path($0)), $gtk_v eq '3' ? '-gtk3' : (), $icons ? '-i' : '-g');
+              join(q{ },
+                   $^X,
+                   quotemeta(Cwd::abs_path($0)),
+                   $gtk_v eq '3' ? '-gtk3' : (),
+                   $icons        ? '-i'    : '-g',
+                   '-C', quotemeta($config_file), '-S', quotemeta($schema_file), '-o', quotemeta($menu_file),);
 
             my $var_name = "\$regenerate";
             $generated_menu .= "{\n" . new_item($var_name, $name);
@@ -568,8 +580,8 @@ SEPARATOR
 'Gtk${gtk_v}'->main;
 FOOTER
 
-    open my $menu_fh, '>:encoding(UTF-8)', $menufile
-      or die "$0: Can't open file '${menufile}' for write: $!";
+    open my $menu_fh, '>:encoding(UTF-8)', $menu_file
+      or die "$0: Can't open file '${menu_file}' for write: $!";
     print $menu_fh $generated_menu;
     close $menu_fh;
 }
@@ -577,7 +589,9 @@ FOOTER
 dump_configuration() if $update_config;
 
 ## Load the menu with 'do'
-#-f $menufile ? (do($menufile) || die "$0: Can't run the menu file '${menufile}': $!") : usage();
+#-f $menu_file ? (do($menu_file) || die "$0: Can't run the menu file '${menu_file}': $!") : usage();
 
 ## Load the menu with 'exec'
-(-f $menufile) ? exec($^X, $menufile) : do { output_usage(); exit 1 };  # this cleans up some memory and works nicely with Gtk3
+(-f $menu_file)
+  ? exec($^X, $menu_file)
+  : do { output_usage(); exit 1 };    # this cleans up some memory and works nicely with Gtk3
