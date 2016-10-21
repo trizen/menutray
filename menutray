@@ -28,7 +28,7 @@ use Encode qw(decode_utf8);
 use Linux::DesktopFiles 0.08;
 
 my $pkgname = 'menutray';
-my $version = '0.46';
+my $version = '0.47';
 my $gtk_v   = '2';          # Version of GTK+
 
 my ($icons, $create_menu, $reconfigure, $update_config);
@@ -595,7 +595,6 @@ dump_configuration() if $update_config;
 ## Load the menu with 'do'
 #-f $menu_file ? (do($menu_file) || die "$0: Can't run the menu file '${menu_file}': $!") : usage();
 
-## Load the menu with 'exec'
-(-f $menu_file)
-  ? exec($^X, $menu_file)
-  : do { output_usage(); exit 1 };    # this cleans up some memory and works nicely with Gtk3
+# Load the menu with 'exec'
+# This cleans-up some memory and works nicely with Gtk3
+(-f $menu_file) ? exec($^X, $menu_file) : do { output_usage(); exit 1 };
