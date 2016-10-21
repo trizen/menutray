@@ -18,7 +18,7 @@
 # Program: menutray
 # License: GPLv3
 # Created on: 03 March 2011
-# Latest edit on: 17 October 2016
+# Latest edit on: 21 October 2016
 
 # Websites: https://github.com/trizen/menutray
 #           http://trizenx.blogspot.ro/2012/02/menutray.html
@@ -478,23 +478,24 @@ EOT
             add_item(@{$schema->{item}});
         }
         elsif (exists $schema->{menutray}) {
+            require Cwd;
             my ($label, $icon) = @{$schema->{menutray}};
             push_app(
                      [
                       {
-                       Exec    => "$CONFIG{editor} $menu_file",
+                       Exec    => join(' ', $CONFIG{editor}, quotemeta(Cwd::abs_path($menu_file))),
                        Name    => "Menu",
                        Icon    => 'gtk-edit',
                        Comment => 'Open the menu file for inspection',
                       },
                       {
-                       Exec    => "$CONFIG{editor} $schema_file",
-                       Name    => "Schema",
-                       Icon    => 'gtk-edit',
+                       Exec => join(' ', $CONFIG{editor}, quotemeta(Cwd::abs_path($schema_file))),
+                       Name => "Schema",
+                       Icon => 'gtk-edit',
                        Comment => 'Open the schema file to customize the menu'
                       },
                       {
-                       Exec    => "$CONFIG{editor} $config_file",
+                       Exec    => join(' ', $CONFIG{editor}, quotemeta(Cwd::abs_path($config_file))),
                        Name    => "Config",
                        Icon    => 'gtk-edit',
                        Comment => 'Open the configuration file'
@@ -539,12 +540,15 @@ QUIT
 
             require Cwd;
             my $regenerate_exec =
-              join(q{ },
-                   $^X,
-                   quotemeta(Cwd::abs_path($0)),
-                   $gtk_v eq '3' ? '-gtk3' : (),
-                   $icons        ? '-i'    : '-g',
-                   '-C', quotemeta($config_file), '-S', quotemeta($schema_file), '-o', quotemeta($menu_file),);
+              join(
+                   ' ',
+                   $^X, quotemeta(Cwd::abs_path($0)),
+                   ($gtk_v eq '3' ? '-gtk3' : ()),
+                   ($icons        ? '-i'    : '-g'),
+                   '-C' => quotemeta(Cwd::abs_path($config_file)),
+                   '-S' => quotemeta(Cwd::abs_path($schema_file)),
+                   '-o' => quotemeta(Cwd::abs_path($menu_file)),
+                  );
 
             my $var_name = "\$regenerate";
             $generated_menu .= "{\n" . new_item($var_name, $name);
