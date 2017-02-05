@@ -446,6 +446,7 @@ sub generate_menu {
 # Edit '$schema_file' instead!
 
 use utf8;
+use strict;
 use Gtk${gtk_v} ('-init');
 
 my \$menu = 'Gtk${gtk_v}::Menu'->new;
