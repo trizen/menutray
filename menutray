@@ -464,7 +464,7 @@ HEADER
     $generated_menu .= $gtk_v == 2 ? <<'GTK2' : <<'GTK3';
     $menu->popup(undef, undef, sub {return Gtk2::StatusIcon::position_menu($menu, 0, 0, $icon)}, [1, 1], 0, 0);
 GTK2
-    $menu->popup(undef, undef, sub {return Gtk3::StatusIcon::position_menu($menu, $icon)}, [1, 1], 0, 0);
+    $menu->popup(undef, undef, sub {return Gtk3::StatusIcon::position_menu($menu, 0, 0, $icon)}, [1, 1], 0, 0);
 GTK3
 
     $generated_menu .= <<'EOT';
