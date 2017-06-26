@@ -607,7 +607,7 @@ SEPARATOR
 FOOTER
 
     if ($depth != 0) {
-        die "$0: unbalanced beg/end categories! (depth: $depth)\n";
+        die "$0: unbalanced beg/end submenus! (depth: $depth)\n";
     }
 
     open my $menu_fh, '>:encoding(UTF-8)', $menu_file
