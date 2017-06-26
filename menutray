@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright (C) 2011-2016 Daniel "Trizen" Șuteu <echo dHJpemVueEBnbWFpbC5jb20K | base64 -d>.
+# Copyright (C) 2011-2017 Daniel "Trizen" Șuteu <echo dHJpemVueEBnbWFpbC5jb20K | base64 -d>.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,18 +18,24 @@
 # Program: menutray
 # License: GPLv3
 # Created on: 03 March 2011
-# Latest edit on: 22 May 2017
+# Latest edit on: 26 June 2017
 
 # Websites: https://github.com/trizen/menutray
 #           http://trizenx.blogspot.ro/2012/02/menutray.html
 
 use 5.014;
+use warnings;
+
+use File::Spec qw();
 use Encode qw(decode_utf8);
 use Linux::DesktopFiles 0.08;
 
 my $pkgname = 'menutray';
-my $version = '0.48';
+my $version = '0.50';
 my $gtk_v   = '2';          # Version of GTK+
+
+my $depth = 0;              # current submenu depth
+my $menu  = '$menu';        # current submenu name
 
 my ($icons, $create_menu, $reconfigure, $update_config);
 
@@ -78,7 +84,7 @@ my $config_help = <<"HELP";
 
 || FILTERING
     | skip_filename_re    : Skip a .desktop file if its name matches the regex.
-                            Name is from the last slash to the end. (filename.desktop)
+                            Name is from the last slash to the end. (e.g.: filename.desktop)
                             Example: qr/^(?:gimp|xterm)\\b/,    # skips 'gimp' and 'xterm'
 
     | skip_entry          : Skip a destkop file if the value from a given key matches the regex.
@@ -93,12 +99,10 @@ my $config_help = <<"HELP";
                                 {key => 'Exec', re => qr/\\\\\\\\/,  value => '\\\\', global => 1},    # for wine apps
                             ],
 
-
 || ICON SETTINGS
     | icon_type           : Menu icon type (menu, dnd, small-toolbar, large-toolbar, button, dialog)
     | icon_size           : Icon size in pixels (only for absolute icon paths) (default: [16, 16])
     | missing_image       : Use this icon for missing icons (default: gtk-missing-image)
-
 
 || KEYS
     | tooltip_keys        : Valid keys for the tooltip text.
@@ -107,7 +111,6 @@ my $config_help = <<"HELP";
     | name_keys           : Valid keys for the item names.
                             Example: ['Name[fr]', 'GenericName[fr]', 'Name'],   # french menu
 
-
 || PATHS
     | desktop_files_paths   : Absolute paths which contain .desktop files.
                               Example: [
@@ -115,12 +118,6 @@ my $config_help = <<"HELP";
                                 "\$ENV{HOME}/.local/share/applications",
                                 glob("\$ENV{HOME}/.local/share/applications/wine/Programs/*"),
                               ],
-
-
-|| NOTES
-    | Regular expressions:
-        * use qr/RE/ instead of 'RE'
-        * use qr/RE/i for case insensitive mode
 HELP
 
 if (@ARGV) {
@@ -248,9 +245,17 @@ if (not -e $schema_file) {
     }
 }
 
-require $schema_file;    # Load the configuration files
+foreach my $file (\$schema_file, \$config_file) {
+    if (not File::Spec->file_name_is_absolute($$file)) {
+        $$file = File::Spec->rel2abs($$file);
+    }
+}
 
-# Remove invalid user-defined keys
+# Load the configuration files
+require $schema_file;
+require $config_file;
+
+# Remove invalid keys
 my @valid_keys = grep exists $CONFIG{$_}, keys %$CONFIG;
 @CONFIG{@valid_keys} = @{$CONFIG}{@valid_keys};
 
@@ -271,8 +276,8 @@ my $desk_obj = Linux::DesktopFiles->new(
     case_insensitive_cats => 1,
                                        );
 
-my $comment = '# # ' x 10;
-my ($inside_cat, $generated_menu);
+my $comment        = '# # ' x 10;
+my $generated_menu = '';
 
 if ($create_menu) {
     generate_menu();
@@ -347,32 +352,44 @@ sub select_icon {
 }
 
 sub begin_category {
-    my ($var, $cat_name, $icon_name) = @_;
+    my ($cat_name, $icon_name) = @_;
 
-    $generated_menu .= <<"CATEGORY_HEADER" . new_item($var, $cat_name);
+    $generated_menu .= <<"CATEGORY_HEADER" . new_item('$app', $cat_name);
 \n    $comment\U$cat_name\E $comment
 {
-    my \$apps = 'Gtk${gtk_v}::Menu'->new;
+    my \$menu$depth = 'Gtk${gtk_v}::Menu'->new;
 CATEGORY_HEADER
 
     if ($icons && defined($icon_name)) {
-        $generated_menu .= select_icon($var, $icon_name);
+        $generated_menu .= select_icon('$app', $icon_name);
     }
 
     return 1;
 }
 
 sub end_category {
-    my ($var) = @_;
-    <<"END_OF_CAT";
-    $var->set_submenu(\$apps);
-    \$menu->append($var);
+
+    $menu = '$menu' . (($depth - 1) || '');
+
+    my $str = <<"END_OF_CAT";
+    \$app->set_submenu(\$menu$depth);
+    $menu->append(\$app);
 }
 END_OF_CAT
+
+    $depth -= 1;
+    return $str;
+}
+
+sub incr_depth {
+    $depth += 1;
+    $menu = '$menu' . $depth;
 }
 
 sub push_app {
     my ($entries, $cat_name, $icon_name) = @_;
+
+    incr_depth();
 
     my @menu_items;
     foreach my $entry (@{$entries}) {
@@ -401,20 +418,22 @@ sub push_app {
             $item .= select_icon($item_var, $entry->{Icon} || ($entry->{Exec} =~ /^(\S+)/));
         }
         push @menu_items, $item . <<"APPEND";
-    \$apps->append($item_var);
+    \$menu$depth->append($item_var);
 }
 APPEND
     }
 
     @menu_items || return;    # skip creating empty categories
 
-    my $cat_var = '$cat';
-    begin_category($cat_var, $cat_name, $icon_name);
+    begin_category($cat_name, $icon_name);
 
-    $generated_menu .= join(q{}, map $_->[1], sort { $a->[0] cmp $b->[0] }
-                              map [lc($_) => $_], @menu_items)
-      . end_category($cat_var);
-    1;
+    $generated_menu .= (
+                        join(
+                             '', map $_->[1], sort { $a->[0] cmp $b->[0] }
+                               map [lc($_) => $_], @menu_items
+                            )
+                          . end_category()
+                       );
 }
 
 sub add_item {
@@ -427,11 +446,8 @@ sub add_item {
         $generated_menu .= select_icon($var_name, $icon);
     }
 
-    $generated_menu .= system_command($var_name, $command) . ($inside_cat ? <<"IN_SUBMENU" : <<"IN_MENU");
-    \$apps->append($var_name);
-}\n
-IN_SUBMENU
-    \$menu->append($var_name);
+    $generated_menu .= system_command($var_name, $command) . <<"IN_MENU";
+    $menu->append($var_name);
 }\n
 IN_MENU
     return 1;
@@ -479,6 +495,7 @@ EOT
     my $categories = $desk_obj->parse_desktop_files;
 
     foreach my $schema (@$SCHEMA) {
+
         if (exists $schema->{cat}) {
             exists($categories->{my $category = lc($schema->{cat}[0]) =~ tr/_a-z0-9/_/cr}) || next;
             push_app(\@{$categories->{$category}}, $schema->{cat}[1], $schema->{cat}[2]);
@@ -513,16 +530,12 @@ EOT
                      $label, $icon
                     );
         }
-        elsif (exists $schema->{begin_cat}) {
-            $inside_cat = 1;
-            begin_category(@{$schema->{begin_cat}});
+        elsif (exists $schema->{beg}) {
+            incr_depth();
+            begin_category(@{$schema->{beg}});
         }
-        elsif (exists $schema->{end_cat}) {
-            $inside_cat = 0;
-            $generated_menu .= end_category($schema->{end_cat});
-        }
-        elsif (exists $schema->{tree}) {
-            push_app(@{$schema->{tree}});
+        elsif (exists $schema->{end}) {
+            $generated_menu .= end_category();
         }
         elsif (exists $schema->{exit}) {
             my ($name, $icon) = @{$schema->{exit}};
@@ -540,7 +553,7 @@ EOT
 
             $generated_menu .= <<"QUIT";
     $var_name->signal_connect('activate', sub { Gtk${gtk_v}->main_quit });
-    \$menu->append($var_name);
+    $menu->append($var_name);
 }
 QUIT
         }
@@ -572,26 +585,30 @@ QUIT
 
             $generated_menu .= <<"REGENERATE_ITEM";
     $var_name->signal_connect('activate', sub {system "\Q$regenerate_exec\E &"; 'Gtk${gtk_v}'->main_quit});
-    \$menu->append($var_name);
+    $menu->append($var_name);
 }
 REGENERATE_ITEM
         }
-        elsif (exists $schema->{raw}) {
-            $generated_menu .= $schema->{raw};
-        }
         elsif (exists $schema->{sep}) {
             $generated_menu .= <<"SEPARATOR";
-\n    \$menu->append('Gtk${gtk_v}::SeparatorMenuItem'->new);
+\n    $menu->append('Gtk${gtk_v}::SeparatorMenuItem'->new);
 SEPARATOR
+        }
+        else {
+            warn "$0: invalid key '", (keys %{$schema})[0], "' in schema file!\n";
         }
     }
 
     $generated_menu .= <<"FOOTER";
-    \$menu->show_all;
+    $menu->show_all;
     return 1;
 }
 'Gtk${gtk_v}'->main;
 FOOTER
+
+    if ($depth != 0) {
+        die "$0: unbalanced beg/end categories! (depth: $depth)\n";
+    }
 
     open my $menu_fh, '>:encoding(UTF-8)', $menu_file
       or die "$0: Can't open file '${menu_file}' for write: $!";
@@ -601,9 +618,6 @@ FOOTER
 
 dump_configuration() if $update_config;
 
-## Load the menu with 'do'
-#-f $menu_file ? (do($menu_file) || die "$0: Can't run the menu file '${menu_file}': $!") : usage();
-
-# Load the menu with 'exec'
-# This cleans-up some memory and works nicely with Gtk3
-(-f $menu_file) ? exec($^X, $menu_file) : do { output_usage(); exit 1 };
+(-f $menu_file)
+  ? exec($^X, $menu_file)
+  : do { output_usage(); exit 1 };
