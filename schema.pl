@@ -6,7 +6,7 @@
 
     item:       add an item inside the menu               {item => ['command', 'label', 'icon']},
     cat:        add a category inside the menu             {cat => ['name', 'label', 'icon']},
-    sep:        horizontal line separator                  {sep => undef}
+    sep:        horizontal line separator                  {sep => undef},
     beg:        beginning of a submenu                     {beg => ['name', 'icon']},
     end:        end of a submenu                           {end => undef},
     menutray:   generic menu settings                 {menutray => ['label', 'icon']},
