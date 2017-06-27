@@ -6,11 +6,9 @@
 
     item:       add an item inside the menu               {item => ['command', 'label', 'icon']},
     cat:        add a category inside the menu             {cat => ['name', 'label', 'icon']},
-    sep:        horizontal line separator                  {sep => undef}
-    raw:        any valid Perl code                        {raw => q(...)},
-    tree:       custom category with items                {tree => [[{...}], 'label', 'icon']},
-    begin_cat:  begin of a category                  {begin_cat => ['$var', 'name', 'icon']},
-    end_cat:    end of a category                      {end_cat => '$var'},
+    sep:        horizontal line separator                  {sep => undef},
+    beg:        beginning of a submenu                     {beg => ['name', 'icon']},
+    end:        end of a submenu                           {end => undef},
     menutray:   generic menu settings                 {menutray => ['label', 'icon']},
     regenerate: regenerate menu                     {regenerate => ['label', 'icon']},
     exit:       quit menu                                 {exit => ['label', 'icon']},
@@ -22,12 +20,10 @@
 #    * ICON can be a either a direct path to an icon or a valid icon name
 #    * Category names are case insensitive. (X-XFCE and x_xfce are equivalent)
 
-require "$ENV{HOME}/.config/menutray/config.pl";
-
 our $SCHEMA = [
-    #          COMMAND                 LABEL                ICON
-    {item => ['xdg-open .',        'File Manager',      'file-manager']},
-    {item => ['xterm',             'Terminal',          'terminal']},
+    #          COMMAND                 LABEL                   ICON
+    {item => ['xdg-open .',        'File Manager',      'system-file-manager']},
+    {item => ['xterm',             'Terminal',          'utilities-terminal']},
     {item => ['xdg-open http://',  'Web Browser',       'web-browser']},
     {item => ['gmrun',             'Run command',       'system-run']},
 
@@ -46,11 +42,10 @@ our $SCHEMA = [
     {cat => ['settings',    'Settings',    'applications-accessories']},
     {cat => ['system',      'System',      'applications-system']},
 
-    #{cat => ['qt',          'QT Applications',    'qt4logo']},
-    #{cat => ['gtk',         'GTK Applications',   'gnome-applications']},
-    #{cat => ['x_xfce',      'XFCE Applications',  'applications-other']},
-    #{cat => ['gnome',       'GNOME Applications', 'gnome-applications']},
-    #{cat => ['consoleonly', 'CLI Applications',   'applications-utilities']},
+    #              LABEL          ICON
+    #{beg => ['My submenu',  'submenu-icon']},
+              #...some items here...#
+    #{end => undef},
 
     {menutray   => ['Menutray', 'preferences-desktop']},
 
@@ -58,70 +53,3 @@ our $SCHEMA = [
     {regenerate => ['Regenerate', 'gtk-refresh']},
     {exit       => ['Exit', 'exit']},
 ];
-
-__END__
-----------------------------------------------------------------------------------------------------
---------------------------------------------- EXAMPLES ---------------------------------------------
-----------------------------------------------------------------------------------------------------
-
-#
-## 'raw' entry:
-#
-
-{
-  raw => q(
-            {
-                # Create the main menu entry
-                my $entry = 'Gtk2::ImageMenuItem'->new('My menu');
-
-                # Set icon
-                $entry->set_image('Gtk2::Image'->new_from_icon_name('applications-system','menu'));
-
-                # Create the submenu
-                my $submenu = Gtk2::Menu->new;
-
-                # Create a new menu item
-                my $item = Gtk2::ImageMenuItem->new('Terminal');
-
-                # Set icon
-                $item->set_image('Gtk2::Image'->new_from_icon_name('terminal','menu'));
-
-                # Set a signal (activates on click)
-                $item->signal_connect('activate',sub {system 'xterm &'});
-
-                # Append the item to the submenu
-                $submenu->append($item);
-
-                # Set the submenu to the entry item
-                $entry->set_submenu($submenu);
-
-                # Append the entry to the main menu
-                $menu->append($entry);
-            }
-        )
-},
-
-#
-## 'tree' entry
-#
-
-{
-  tree => [
-        [
-         {
-            Name => "Item name",
-            Exec => "command",
-            Icon => "icon-name",
-            Comment => "tooltip text",
-         },
-         #{
-            # ...
-         #},
-        ],
-
-        'My category', 'icon-name'
-    ]
-},
-
-----------------------------------------------------------------------------------------------------
-----------------------------------------------------------------------------------------------------
