@@ -329,7 +329,7 @@ SIGNAL_CONNECT
 
 sub new_item {
     my $var   = shift;
-    my $label = decode_utf8(shift);
+    my $label = '_' . decode_utf8(shift);
     my $type  = $icons ? "Gtk${gtk_v}::ImageMenuItem" : "Gtk${gtk_v}::MenuItem";
     return <<"ITEM";
     my $var = '${type}'->new("\Q$label\E");
