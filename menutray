@@ -18,7 +18,7 @@
 # Program: menutray
 # License: GPLv3
 # Created on: 03 March 2011
-# Latest edit on: 26 June 2017
+# Latest edit on: 23 August 2017
 
 # Websites: https://github.com/trizen/menutray
 #           http://trizenx.blogspot.ro/2012/02/menutray.html
@@ -216,7 +216,7 @@ my %CONFIG = (
     missing_image          => 'gtk-missing-image',
     menutray_icon          => 'start-here',
     menutray_title         => 'menutray',
-    menutray_tooltip       => 'Applications - ' . `hostname | tr -d '\n'`,
+    menutray_tooltip       => 'Applications',
     gdk_interpolation_type => 'hyper',
 
     VERSION => $version,
@@ -469,25 +469,22 @@ use utf8;
 use strict;
 use Gtk${gtk_v} ('-init');
 
-\$SIG\{USR1\} = \\\&show_icon_menu;
-
 my \$menu = 'Gtk${gtk_v}::Menu'->new;
 my \$icon = 'Gtk${gtk_v}::StatusIcon'->new;
 
-my \$menutray_title = "$CONFIG{menutray_title}";
+my \$menutray_title   = "\Q$CONFIG{menutray_title}\E";
+my \$menutray_tooltip = "\Q$CONFIG{menutray_tooltip}\E";
 
-if (\$menutray_title) {
-    \$icon->set_title(\$menutray_title);
-    \$icon->set_name('');
-}
+\$icon->set_title(\$menutray_title);
+\$icon->set_name('') if ${\($gtk_v == 2 ? 1 : 0)};
 
-my \$menutray_tooltip = "$CONFIG{menutray_tooltip}";
-
-\$icon->set_tooltip(\$menutray_tooltip) if \$menutray_tooltip;
+\$icon->set_tooltip(\$menutray_tooltip) if ${\($gtk_v == 2 ? 1 : 0)};
 
 \$icon->set_from_icon_name('$CONFIG{menutray_icon}');
 \$icon->set_visible(1);
 \$icon->signal_connect('button-release-event', \\&show_icon_menu);
+
+local \$SIG{USR1} = \\&show_icon_menu;
 
 load_menu();
 
