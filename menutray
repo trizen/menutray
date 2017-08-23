@@ -467,6 +467,8 @@ use utf8;
 use strict;
 use Gtk${gtk_v} ('-init');
 
+\$SIG\{USR1\} = \\\&show_icon_menu;
+
 my \$menu = 'Gtk${gtk_v}::Menu'->new;
 my \$icon = 'Gtk${gtk_v}::StatusIcon'->new;
 
