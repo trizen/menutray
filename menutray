@@ -475,10 +475,14 @@ my \$icon = 'Gtk${gtk_v}::StatusIcon'->new;
 my \$menutray_title   = "\Q$CONFIG{menutray_title}\E";
 my \$menutray_tooltip = "\Q$CONFIG{menutray_tooltip}\E";
 
-\$icon->set_title(\$menutray_title);
-\$icon->set_name('') if ${\($gtk_v == 2 ? 1 : 0)};
+if (defined(\$menutray_title) and ${\($gtk_v == 2 ? 1 : 0)}) {
+    \$icon->set_title(\$menutray_title);
+    \$icon->set_name('');
+}
 
-\$icon->set_tooltip(\$menutray_tooltip) if ${\($gtk_v == 2 ? 1 : 0)};
+if (defined(\$menutray_tooltip) and ${\($gtk_v == 2 ? 1 : 0)}) {
+    \$icon->set_tooltip(\$menutray_tooltip);
+}
 
 \$icon->set_from_icon_name('$CONFIG{menutray_icon}');
 \$icon->set_visible(1);
