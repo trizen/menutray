@@ -32,7 +32,7 @@ use Linux::DesktopFiles 0.08;
 
 my $pkgname = 'menutray';
 my $version = '0.50';
-my $gtk_v   = '2';          # Version of GTK+
+my $GTK     = 'Gtk2';       # Version of GTK+
 
 my $depth = 0;              # current submenu depth
 my $menu  = '$menu';        # current submenu name
@@ -150,7 +150,7 @@ if (@ARGV) {
         }
         elsif ($arg eq '-gtk3' or $arg eq '--gtk3') {
             $create_menu //= 1;
-            $gtk_v = '3';
+            $GTK = 'Gtk3';
         }
         elsif ($arg eq '-h' or $arg eq '--help' or $arg eq '-?') {
             output_usage();
@@ -210,14 +210,13 @@ my %CONFIG = (
     name_keys    => ['Name'],
     tooltip_keys => ['Comment'],
 
-    editor                 => 'geany',
-    icon_type              => 'menu',
-    icon_size              => [16, 16],
-    missing_image          => 'gtk-missing-image',
-    menutray_icon          => 'start-here',
-    menutray_title         => 'menutray',
-    menutray_tooltip       => 'Applications',
-    gdk_interpolation_type => 'hyper',
+    editor           => 'geany',
+    icon_type        => 'menu',
+    icon_size        => [16, 16],
+    missing_image    => 'gtk-missing-image',
+    menutray_icon    => 'start-here',
+    menutray_title   => 'menutray',
+    menutray_tooltip => 'Applications',
 
     VERSION => $version,
              );
@@ -299,25 +298,25 @@ sub image_from_file {
     my ($var, $icon_filename) = @_;
 
     return <<"ICON_FROM_XPM" if $icon_filename =~ /\.xpm\z/i;
-    $var->set_image('Gtk${gtk_v}::Image'->new_from_pixbuf('Gtk${gtk_v}::Gdk::Pixbuf'->new_from_file("\Q$icon_filename\E")->scale_simple($CONFIG{icon_size}[0],$CONFIG{icon_size}[1],q{$CONFIG{gdk_interpolation_type}})));
+    $var->set_image('${GTK}::Image'->new_from_pixbuf('${GTK}::Gdk::Pixbuf'->new_from_file("\Q$icon_filename\E")->scale_simple($CONFIG{icon_size}[0],$CONFIG{icon_size}[1],'hyper')));
 ICON_FROM_XPM
 
     return <<"ICON_FROM_FILE";
-    $var->set_image('Gtk${gtk_v}::Image'->new_from_pixbuf('Gtk${gtk_v}::Gdk::Pixbuf'->new_from_file_at_size("\Q$icon_filename\E",$CONFIG{icon_size}[0],$CONFIG{icon_size}[1])));
+    $var->set_image('${GTK}::Image'->new_from_pixbuf('${GTK}::Gdk::Pixbuf'->new_from_file_at_size("\Q$icon_filename\E",$CONFIG{icon_size}[0],$CONFIG{icon_size}[1])));
 ICON_FROM_FILE
 }
 
 sub image_from_icon_name {
     my ($var, $icon_name) = @_;
     <<"ICON_FROM_NAME";
-    $var->set_image('Gtk${gtk_v}::Image'->new_from_icon_name("\Q$icon_name\E",q{$CONFIG{icon_type}}));
+    $var->set_image('${GTK}::Image'->new_from_icon_name("\Q$icon_name\E",q{$CONFIG{icon_type}}));
 ICON_FROM_NAME
 }
 
 sub missing_image {
     my ($var) = @_;
     <<"ICON_FROM_STOCK";
-    $var->set_image('Gtk${gtk_v}::Image'->new_from_stock(q{$CONFIG{missing_image}},q{$CONFIG{icon_type}}));
+    $var->set_image('${GTK}::Image'->new_from_stock(q{$CONFIG{missing_image}},q{$CONFIG{icon_type}}));
 ICON_FROM_STOCK
 }
 
@@ -332,7 +331,7 @@ SIGNAL_CONNECT
 sub new_item {
     my $var   = shift;
     my $label = '_' . decode_utf8(shift);
-    my $type  = $icons ? "Gtk${gtk_v}::ImageMenuItem" : "Gtk${gtk_v}::MenuItem";
+    my $type  = $icons ? "${GTK}::ImageMenuItem" : "${GTK}::MenuItem";
     return <<"ITEM";
     my $var = '${type}'->new("\Q$label\E");
 ITEM
@@ -359,7 +358,7 @@ sub begin_category {
     $generated_menu .= <<"CATEGORY_HEADER" . new_item('$app', $cat_name);
 \n    $comment\U$cat_name\E $comment
 {
-    my \$menu$depth = 'Gtk${gtk_v}::Menu'->new;
+    my \$menu$depth = '${GTK}::Menu'->new;
 CATEGORY_HEADER
 
     if ($icons && defined($icon_name)) {
@@ -455,7 +454,76 @@ IN_MENU
     return 1;
 }
 
+sub regenerate_item {
+    my ($menu_var, $name, $icon) = @_;
+
+    require Cwd;
+    my $regenerate_exec = join(
+                               ' ',
+                               $^X, quotemeta(Cwd::abs_path($0)),
+                               ($GTK eq 'Gtk3' ? '-gtk3' : ()),
+                               ($icons         ? '-i'    : '-g'),
+                               '-C' => quotemeta(Cwd::abs_path($config_file)),
+                               '-S' => quotemeta(Cwd::abs_path($schema_file)),
+                               '-o' => quotemeta(Cwd::abs_path($menu_file)),
+                              );
+
+    my $var_name = "\$regenerate";
+    my $source = "{\n" . new_item($var_name, $name);
+
+    if ($CONFIG{set_tooltips}) {
+        $source .= tooltip($var_name, "Regenerate this menu.");
+    }
+
+    if ($icons && defined($icon)) {
+        $source .= select_icon($var_name, $icon);
+    }
+
+    $source .= <<"REGENERATE_ITEM";
+    $var_name->signal_connect('activate', sub {system "\Q$regenerate_exec\E &"; '${GTK}'->main_quit});
+    $menu_var->append($var_name);
+}
+REGENERATE_ITEM
+
+    return $source;
+}
+
+sub quit_item {
+    my ($menu_var, $name, $icon) = @_;
+
+    my $var_name = "\$quit";
+    my $source = "{\n" . new_item($var_name, $name);
+
+    if ($CONFIG{set_tooltips}) {
+        $source .= tooltip($var_name, "Close this application.");
+    }
+
+    if ($icons && defined($icon)) {
+        $source .= select_icon($var_name, $icon);
+    }
+
+    $source .= <<"QUIT_ITEM";
+    $var_name->signal_connect('activate', sub { '${GTK}'->main_quit });
+    $menu_var->append($var_name);
+}
+QUIT_ITEM
+
+    return $source;
+}
+
+sub popup_menu {
+    my ($menu_var) = @_;
+    "$menu_var->popup(undef, undef, sub {return ${GTK}::StatusIcon::position_menu($menu_var, 0, 0, \$icon)}, [1, 1], 0, 0);";
+}
+
 sub generate_menu {
+
+    my $schema_file_relative = $schema_file;
+
+    if ($home_dir eq $ENV{HOME}) {
+        $schema_file_relative =~ s/\Q$home_dir\E/~/;
+    }
+
     $generated_menu = <<"HEADER";
 #!/usr/bin/perl
 
@@ -463,24 +531,24 @@ sub generate_menu {
 
 # DO NOT edit this file!
 # Any change in this file will be lost!
-# Edit '$schema_file' instead!
+# Edit $schema_file_relative instead!
 
 use utf8;
 use strict;
-use Gtk${gtk_v} ('-init');
+use $GTK ('-init');
 
-my \$menu = 'Gtk${gtk_v}::Menu'->new;
-my \$icon = 'Gtk${gtk_v}::StatusIcon'->new;
+my \$menu = '${GTK}::Menu'->new;
+my \$icon = '${GTK}::StatusIcon'->new;
 
 my \$menutray_title   = "\Q$CONFIG{menutray_title}\E";
 my \$menutray_tooltip = "\Q$CONFIG{menutray_tooltip}\E";
 
-if (defined(\$menutray_title) and ${\($gtk_v == 2 ? 1 : 0)}) {
+if (defined(\$menutray_title) and ${\($GTK eq 'Gtk2' ? 1 : 0)}) {
     \$icon->set_title(\$menutray_title);
     \$icon->set_name('');
 }
 
-if (defined(\$menutray_tooltip) and ${\($gtk_v == 2 ? 1 : 0)}) {
+if (defined(\$menutray_tooltip) and ${\($GTK eq 'Gtk2' ? 1 : 0)}) {
     \$icon->set_tooltip(\$menutray_tooltip);
 }
 
@@ -495,18 +563,27 @@ load_menu();
 sub show_icon_menu {
 HEADER
 
-    $generated_menu .= $gtk_v == 2 ? <<'GTK2' : <<'GTK3';
-    $menu->popup(undef, undef, sub {return Gtk2::StatusIcon::position_menu($menu, 0, 0, $icon)}, [1, 1], 0, 0);
-GTK2
-    $menu->popup(undef, undef, sub {return Gtk3::StatusIcon::position_menu($menu, 0, 0, $icon)}, [1, 1], 0, 0);
-GTK3
+    $generated_menu .= <<"HEADER";
+    my (undef, \$event) = \@_;
 
-    $generated_menu .= <<'EOT';
+    if (ref(\$event) and \$event->button == 3) {
+
+        my \$right_click = '${GTK}::Menu'->new;
+${\(regenerate_item('\$right_click', 'Regenerate', 'gtk-refresh') =~ s/^/        /rmg)}
+${\(      quit_item('\$right_click', 'Quit',  'application-exit') =~ s/^/        /rmg)}
+        \$right_click->show_all;
+        ${\(popup_menu('$right_click'))}
+        return 1;
+    }
+HEADER
+
+    $generated_menu .= <<"HEADER";
+    ${\(popup_menu('$menu'))}
     return 1;
 }
 
 sub load_menu {
-EOT
+HEADER
 
     my $categories = $desk_obj->parse_desktop_files;
 
@@ -555,59 +632,15 @@ EOT
         }
         elsif (exists $schema->{exit}) {
             my ($name, $icon) = @{$schema->{exit}};
-
-            my $var_name = "\$quit";
-            $generated_menu .= "{\n" . new_item($var_name, $name);
-
-            if ($CONFIG{set_tooltips}) {
-                $generated_menu .= tooltip($var_name, "Close this application.");
-            }
-
-            if ($icons && defined($icon)) {
-                $generated_menu .= select_icon($var_name, $icon);
-            }
-
-            $generated_menu .= <<"QUIT";
-    $var_name->signal_connect('activate', sub { Gtk${gtk_v}->main_quit });
-    $menu->append($var_name);
-}
-QUIT
+            $generated_menu .= quit_item($menu, $name, $icon);
         }
         elsif (exists $schema->{regenerate}) {
             my ($name, $icon) = @{$schema->{regenerate}};
-
-            require Cwd;
-            my $regenerate_exec =
-              join(
-                   ' ',
-                   $^X, quotemeta(Cwd::abs_path($0)),
-                   ($gtk_v eq '3' ? '-gtk3' : ()),
-                   ($icons        ? '-i'    : '-g'),
-                   '-C' => quotemeta(Cwd::abs_path($config_file)),
-                   '-S' => quotemeta(Cwd::abs_path($schema_file)),
-                   '-o' => quotemeta(Cwd::abs_path($menu_file)),
-                  );
-
-            my $var_name = "\$regenerate";
-            $generated_menu .= "{\n" . new_item($var_name, $name);
-
-            if ($CONFIG{set_tooltips}) {
-                $generated_menu .= tooltip($var_name, "Regenerate this menu.");
-            }
-
-            if ($icons && defined($icon)) {
-                $generated_menu .= select_icon($var_name, $icon);
-            }
-
-            $generated_menu .= <<"REGENERATE_ITEM";
-    $var_name->signal_connect('activate', sub {system "\Q$regenerate_exec\E &"; 'Gtk${gtk_v}'->main_quit});
-    $menu->append($var_name);
-}
-REGENERATE_ITEM
+            $generated_menu .= regenerate_item($menu, $name, $icon);
         }
         elsif (exists $schema->{sep}) {
             $generated_menu .= <<"SEPARATOR";
-\n    $menu->append('Gtk${gtk_v}::SeparatorMenuItem'->new);
+\n    $menu->append('${GTK}::SeparatorMenuItem'->new);
 SEPARATOR
         }
         else {
@@ -619,7 +652,7 @@ SEPARATOR
     $menu->show_all;
     return 1;
 }
-'Gtk${gtk_v}'->main;
+'${GTK}'->main;
 FOOTER
 
     if ($depth != 0) {
