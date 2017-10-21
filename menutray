@@ -27,7 +27,7 @@ use 5.014;
 use warnings;
 
 use File::Spec qw();
-use Encode qw(decode_utf8);
+use Encode qw(encode_utf8 decode_utf8);
 use Linux::DesktopFiles 0.23;
 
 my $pkgname = 'menutray';
@@ -575,8 +575,8 @@ HEADER
         eval {
             require File::DesktopEntry;
             my $fde = File::DesktopEntry->new($file);
-            $entry{Name} = $fde->get('Name');
-            $entry{Comment} = $fde->get('Comment') if $CONFIG{tooltips};
+            $entry{Name} = encode_utf8($fde->get('Name'));
+            $entry{Comment} = encode_utf8($fde->get('Comment')) if $CONFIG{tooltips};
         };
 
         foreach my $cat (@cats) {
