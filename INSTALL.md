@@ -5,11 +5,11 @@
     - perl>=5.14.0
     - gtk2-perl ([Gtk2](https://metacpan.org/pod/Gtk2))
     - perl-data-dump ([Data::Dump](https://metacpan.org/pod/Data::Dump))
-    - perl-linux-desktopfiles>=0.08 ([Linux::DesktopFiles](https://metacpan.org/pod/Linux::DesktopFiles))
+    - perl-linux-desktopfiles>=0.24 ([Linux::DesktopFiles](https://metacpan.org/pod/Linux::DesktopFiles))
 
 * Optional dependencies:
     - perl-gtk3 ([Gtk3](https://metacpan.org/pod/Gtk3))
-
+    - perl-file-desktopentry ([File::DesktopEntry](https://metacpan.org/pod/File::DesktopEntry))
 
 ### Installation process:
 
@@ -23,6 +23,9 @@
 - for creating a Gtk3 menu, simply append `-gtk3` to one of the above commands.
 - to load an already generated menu, run `menutray` without any arguments.
 
+### Locale support:
+
+- If [File::DesktopEntry](https://metacpan.org/pod/File::DesktopEntry) is installed, `menutray` will use it to provide locale support.
 
 ### Customizing:
 
