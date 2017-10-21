@@ -18,7 +18,7 @@
 # Program: menutray
 # License: GPLv3
 # Created: 03 March 2011
-# Latest edit: 11 September 2017
+# Latest edit: 21 October 2017
 
 # Websites: https://github.com/trizen/menutray
 #           https://trizenx.blogspot.com/2012/02/menutray.html
@@ -28,7 +28,7 @@ use warnings;
 
 use File::Spec qw();
 use Encode qw(decode_utf8);
-use Linux::DesktopFiles 0.08;
+use Linux::DesktopFiles 0.23;
 
 my $pkgname = 'menutray';
 my $version = '0.50';
@@ -37,7 +37,7 @@ my $GTK     = 'Gtk2';       # Version of GTK+
 my $depth = 0;              # current submenu depth
 my $menu  = '$menu';        # current submenu name
 
-my ($icons, $create_menu, $reconfigure, $update_config);
+my ($with_icons, $create_menu, $reconfigure, $update_config);
 
 our ($CONFIG, $SCHEMA);
 
@@ -96,20 +96,13 @@ my $config_help = <<"HELP";
     | substitutions       : Substitute, by using a regex, in the values of the desktop files.
                             Example: [
                                 {key => 'Exec', re => qr/xterm/, value => 'sakura'},
-                                {key => 'Exec', re => qr/\\\\\\\\/,  value => '\\\\', global => 1},    # for wine apps
+                                {key => 'Name', re => qr/^GNU I\\w+ M\\w+ P\\w+/, value => 'GIMP'},
                             ],
 
 || ICON SETTINGS
     | icon_type           : Menu icon type (menu, dnd, small-toolbar, large-toolbar, button, dialog)
     | icon_size           : Icon size in pixels (only for absolute icon paths) (default: [16, 16])
     | missing_image       : Use this icon for missing icons (default: gtk-missing-image)
-
-|| KEYS
-    | tooltip_keys        : Valid keys for the tooltip text.
-                            Example: ['Comment[es]', 'Comment'],
-
-    | name_keys           : Valid keys for the item names.
-                            Example: ['Name[fr]', 'GenericName[fr]', 'Name'],   # french menu
 
 || PATHS
     | desktop_files_paths   : Absolute paths which contain .desktop files.
@@ -123,7 +116,7 @@ HELP
 if (@ARGV) {
     while (defined(my $arg = shift @ARGV)) {
         if ($arg eq '-i') {
-            $icons = 1;
+            $with_icons = 1;
             $create_menu //= 1;
         }
         elsif ($arg eq '-g') {
@@ -205,11 +198,7 @@ my %CONFIG = (
 #>>>
     },
 
-    set_tooltips => 1,
-
-    name_keys    => ['Name'],
-    tooltip_keys => ['Comment'],
-
+    tooltips         => 1,
     editor           => 'geany',
     icon_type        => 'menu',
     icon_size        => [16, 16],
@@ -268,11 +257,9 @@ if ($CONFIG{VERSION} != $version) {
 my $desk_obj = Linux::DesktopFiles->new(
     %{$CONFIG{'Linux::DesktopFiles'}},
 
-    home_dir   => $home_dir,
-    categories => [map $_->{cat}[0], grep exists $_->{cat}, @$SCHEMA],
-
-    keys_to_keep =>
-      [@{$CONFIG{name_keys}}, 'Exec', $icons ? 'Icon' : (), $CONFIG{set_tooltips} ? @{$CONFIG{tooltip_keys}} : ()],
+    home_dir     => $home_dir,
+    categories   => [map $_->{cat}[0], grep exists $_->{cat}, @$SCHEMA],
+    keys_to_keep => ['Name', 'Exec', ($with_icons ? 'Icon' : ()), ($CONFIG{tooltips} ? 'Comment' : ())],
 
     case_insensitive_cats => 1,
                                        );
@@ -331,7 +318,7 @@ SIGNAL_CONNECT
 sub new_item {
     my $var   = shift;
     my $label = '_' . decode_utf8(shift);
-    my $type  = $icons ? "${GTK}::ImageMenuItem" : "${GTK}::MenuItem";
+    my $type  = $with_icons ? "${GTK}::ImageMenuItem" : "${GTK}::MenuItem";
     return <<"ITEM";
     my $var = '${type}'->new("\Q$label\E");
 ITEM
@@ -361,7 +348,7 @@ sub begin_category {
     my \$menu$depth = '${GTK}::Menu'->new;
 CATEGORY_HEADER
 
-    if ($icons && defined($icon_name)) {
+    if ($with_icons && defined($icon_name)) {
         $generated_menu .= select_icon('$app', $icon_name);
     }
 
@@ -394,30 +381,18 @@ sub push_app {
 
     my @menu_items;
     foreach my $entry (@{$entries}) {
-        my $item;
+
         my $item_var = '$app';
+        my $item = "{\n" . new_item($item_var, $entry->{Name} // next) . system_command($item_var, $entry->{Exec});
 
-        foreach my $nkey (@{$CONFIG{name_keys}}) {
-            if (defined $entry->{$nkey}) {
-                $item = "{\n" . new_item($item_var, $entry->{$nkey}) . system_command($item_var, $entry->{Exec});
-                last;
-            }
+        if ($CONFIG{tooltips} and defined($entry->{Comment})) {
+            $item .= tooltip($item_var, $entry->{Comment});
         }
 
-        $item // next;    # skip entries without a `Name` field
-
-        if ($CONFIG{set_tooltips}) {
-            foreach my $tkey (@{$CONFIG{tooltip_keys}}) {
-                if (defined $entry->{$tkey}) {
-                    $item .= tooltip($item_var, $entry->{$tkey});
-                    last;
-                }
-            }
-        }
-
-        if ($icons) {
+        if ($with_icons) {
             $item .= select_icon($item_var, $entry->{Icon} || ($entry->{Exec} =~ /^(\S+)/));
         }
+
         push @menu_items, $item . <<"APPEND";
     \$menu$depth->append($item_var);
 }
@@ -443,7 +418,7 @@ sub add_item {
     my $var_name = '$item';
     $generated_menu .= "{\n" . new_item($var_name, $name);
 
-    if ($icons && defined($icon)) {
+    if ($with_icons && defined($icon)) {
         $generated_menu .= select_icon($var_name, $icon);
     }
 
@@ -462,7 +437,7 @@ sub regenerate_item {
                                ' ',
                                $^X, quotemeta(Cwd::abs_path($0)),
                                ($GTK eq 'Gtk3' ? '-gtk3' : ()),
-                               ($icons         ? '-i'    : '-g'),
+                               ($with_icons    ? '-i'    : '-g'),
                                '-C' => quotemeta(Cwd::abs_path($config_file)),
                                '-S' => quotemeta(Cwd::abs_path($schema_file)),
                                '-o' => quotemeta(Cwd::abs_path($menu_file)),
@@ -471,11 +446,11 @@ sub regenerate_item {
     my $var_name = "\$regenerate";
     my $source = "{\n" . new_item($var_name, $name);
 
-    if ($CONFIG{set_tooltips}) {
+    if ($CONFIG{tooltips}) {
         $source .= tooltip($var_name, "Regenerate this menu.");
     }
 
-    if ($icons && defined($icon)) {
+    if ($with_icons && defined($icon)) {
         $source .= select_icon($var_name, $icon);
     }
 
@@ -494,11 +469,11 @@ sub quit_item {
     my $var_name = "\$quit";
     my $source = "{\n" . new_item($var_name, $name);
 
-    if ($CONFIG{set_tooltips}) {
+    if ($CONFIG{tooltips}) {
         $source .= tooltip($var_name, "Close this application.");
     }
 
-    if ($icons && defined($icon)) {
+    if ($with_icons && defined($icon)) {
         $source .= select_icon($var_name, $icon);
     }
 
@@ -585,13 +560,35 @@ HEADER
 sub load_menu {
 HEADER
 
-    my $categories = $desk_obj->parse_desktop_files;
+    my %categories;
+    foreach my $file ($desk_obj->get_desktop_files) {
+
+        (my %entry = $desk_obj->parse_desktop_file($file))
+          || next;
+
+        my @cats = @{$entry{Categories}};
+
+        if (!@cats) {
+            push @cats, $CONFIG{'Linux::DesktopFiles'}{unknown_category_key};
+        }
+
+        eval {
+            require File::DesktopEntry;
+            my $fde = File::DesktopEntry->new($file);
+            $entry{Name} = $fde->get('Name');
+            $entry{Comment} = $fde->get('Comment') if $CONFIG{tooltips};
+        };
+
+        foreach my $cat (@cats) {
+            push @{$categories{$cat}}, \%entry;
+        }
+    }
 
     foreach my $schema (@$SCHEMA) {
 
         if (exists $schema->{cat}) {
-            exists($categories->{my $category = lc($schema->{cat}[0]) =~ tr/_a-z0-9/_/cr}) || next;
-            push_app(\@{$categories->{$category}}, $schema->{cat}[1], $schema->{cat}[2]);
+            exists($categories{my $category = lc($schema->{cat}[0]) =~ tr/_a-z0-9/_/cr}) || next;
+            push_app(\@{$categories{$category}}, $schema->{cat}[1], $schema->{cat}[2]);
         }
         elsif (exists $schema->{item}) {
             add_item(@{$schema->{item}});
