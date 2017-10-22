@@ -116,11 +116,11 @@ HELP
 if (@ARGV) {
     while (defined(my $arg = shift @ARGV)) {
         if ($arg eq '-i') {
-            $with_icons = 1;
-            $create_menu //= 1;
+            $with_icons  = 1;
+            $create_menu = 1;
         }
         elsif ($arg eq '-g') {
-            $create_menu //= 1;
+            $create_menu = 1;
         }
         elsif ($arg eq '-r') {
             $reconfigure = 1;
@@ -142,8 +142,8 @@ if (@ARGV) {
             $menu_file = shift(@ARGV) // die "$0: option '-o' requires an argument!\n";
         }
         elsif ($arg eq '-gtk3' or $arg eq '--gtk3') {
-            $create_menu //= 1;
-            $GTK = 'Gtk3';
+            $create_menu = 1;
+            $GTK         = 'Gtk3';
         }
         elsif ($arg eq '-h' or $arg eq '--help' or $arg eq '-?') {
             output_usage();
@@ -257,9 +257,17 @@ if ($CONFIG{VERSION} != $version) {
 my $desk_obj = Linux::DesktopFiles->new(
     %{$CONFIG{'Linux::DesktopFiles'}},
 
-    home_dir     => $home_dir,
-    categories   => [map $_->{cat}[0], grep exists $_->{cat}, @$SCHEMA],
-    keys_to_keep => ['Name', 'Exec', ($with_icons ? 'Icon' : ()), ($CONFIG{tooltips} ? 'Comment' : ())],
+    categories => [map { exists($_->{cat}) ? $_->{cat}[0] : () } @$SCHEMA],
+
+    keys_to_keep => ['Name', 'Exec',
+                     ($with_icons       ? 'Icon'    : ()),
+                     ($CONFIG{tooltips} ? 'Comment' : ()),
+                     (
+                      ref($CONFIG{'Linux::DesktopFiles'}{skip_entry}) eq 'ARRAY'
+                      ? (map { $_->{key} } @{$CONFIG{'Linux::DesktopFiles'}{skip_entry}})
+                      : ()
+                     ),
+                    ],
 
     case_insensitive_cats => 1,
                                        );
