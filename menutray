@@ -18,7 +18,7 @@
 # Program: menutray
 # License: GPLv3
 # Created: 03 March 2011
-# Latest edit: 21 October 2017
+# Latest edit: 22 October 2017
 
 # Websites: https://github.com/trizen/menutray
 #           https://trizenx.blogspot.com/2012/02/menutray.html
@@ -28,7 +28,7 @@ use warnings;
 
 use File::Spec qw();
 use Encode qw(encode_utf8 decode_utf8);
-use Linux::DesktopFiles 0.24;
+use Linux::DesktopFiles 0.25;
 
 my $pkgname = 'menutray';
 my $version = '0.50';
@@ -563,18 +563,19 @@ HEADER
     my %categories;
     foreach my $file ($desk_obj->get_desktop_files) {
 
-        (my %entry = $desk_obj->parse_desktop_file($file))
-          || next;
+        my $entry = $desk_obj->parse_desktop_file($file) // next;
 
+#<<<
         eval {
             require File::DesktopEntry;
             my $fde = File::DesktopEntry->new($file);
-            $entry{Name} = encode_utf8($fde->get('Name'));
-            $entry{Comment} = encode_utf8($fde->get('Comment')) if $CONFIG{tooltips};
+            $entry->{Name}    = encode_utf8($fde->get('Name'));
+            $entry->{Comment} = encode_utf8($fde->get('Comment')) if $CONFIG{tooltips};
         };
+#>>>
 
-        foreach my $cat (@{$entry{Categories}}) {
-            push @{$categories{$cat}}, \%entry;
+        foreach my $cat (@{$entry->{Categories}}) {
+            push @{$categories{$cat}}, $entry;
         }
     }
 
