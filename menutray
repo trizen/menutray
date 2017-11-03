@@ -96,7 +96,6 @@ my $config_help = <<"HELP";
     | substitutions       : Substitute, by using a regex, in the values of the desktop files.
                             Example: [
                                 {key => 'Exec', re => qr/xterm/, value => 'sakura'},
-                                {key => 'Name', re => qr/^GNU I\\w+ M\\w+ P\\w+/, value => 'GIMP'},
                             ],
 
 || ICON SETTINGS
@@ -199,6 +198,7 @@ my %CONFIG = (
     },
 
     tooltips         => 1,
+    locale_support   => 1,
     editor           => 'geany',
     icon_type        => 'menu',
     icon_size        => [16, 16],
@@ -579,7 +579,7 @@ HEADER
             my $fde = File::DesktopEntry->new($file);
             $entry->{Name}    = encode_utf8($fde->get('Name'));
             $entry->{Comment} = encode_utf8($fde->get('Comment')) if $CONFIG{tooltips};
-        };
+        } if $CONFIG{locale_support};
 #>>>
 
         foreach my $cat (@{$entry->{Categories}}) {
