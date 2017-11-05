@@ -5,6 +5,10 @@ A simple GTK+ application menu tray.
 
 ![menutray](https://2.bp.blogspot.com/-Tst48LetC_8/VmucnuuC_lI/AAAAAAAAfag/bCm3TEon5nI/s1600/2015-12-12-060231_1920x1080_scrot.png)
 
+----
+
+### Usage
+
 ```
 usage: menutray [options]
 
