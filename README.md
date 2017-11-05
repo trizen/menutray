@@ -7,7 +7,7 @@ A simple GTK+ application menu tray.
 
 ----
 
-### Usage
+### OPTIONS
 
 ```
 usage: menutray [options]
