@@ -31,4 +31,4 @@ help:
 * Schema : ~/.config/menutray/schema.pl
 ```
 
-Installation process: https://github.com/trizen/menutray/blob/master/INSTALL.md
+**Installation:** https://github.com/trizen/menutray/blob/master/INSTALL.md
