@@ -502,10 +502,10 @@ sub popup_menu {
     my ($menu_var) = @_;
     <<"POPUP";
 $menu_var->popup(undef, undef, sub {
-    my (\$x, \$y, \@list) = ${GTK}::StatusIcon::position_menu($menu_var, 0, 0, \$icon);
-    (\$x, \$y) = \@_[1,2] if $CONFIG{popup_at_cursor};
-    (\$x, \$y, \@list);
-}, [1, 1], 0, 0);
+            my (\$x, \$y, \@list) = ${GTK}::StatusIcon::position_menu($menu_var, 0, 0, \$icon);
+            (\$x, \$y) = \@_[1,2] if $CONFIG{popup_at_cursor};
+            (\$x, \$y, \@list);
+        }, [1, 1], 0, 0);
 POPUP
 }
 
