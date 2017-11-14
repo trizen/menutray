@@ -18,10 +18,14 @@
 # Program: menutray
 # License: GPLv3
 # Created: 03 March 2011
-# Latest edit: 22 October 2017
+# Latest edit: 14 November 2017
 
-# Websites: https://github.com/trizen/menutray
-#           https://trizenx.blogspot.com/2012/02/menutray.html
+# Contributor(s):
+#   andrei-a-papou - https://github.com/andrei-a-papou
+
+# Websites:
+#   https://github.com/trizen/menutray
+#   https://trizenx.blogspot.com/2012/02/menutray.html
 
 use 5.014;
 use warnings;
@@ -199,6 +203,7 @@ my %CONFIG = (
 
     tooltips         => 1,
     locale_support   => 1,
+    popup_at_cursor  => 0,
     editor           => 'geany',
     icon_type        => 'menu',
     icon_size        => [16, 16],
@@ -206,8 +211,7 @@ my %CONFIG = (
     menutray_icon    => 'start-here',
     menutray_title   => 'menutray',
     menutray_tooltip => 'Applications',
-
-    VERSION => $version,
+    VERSION          => $version,
              );
 
 sub dump_configuration {
@@ -496,7 +500,13 @@ QUIT_ITEM
 
 sub popup_menu {
     my ($menu_var) = @_;
-    "$menu_var->popup(undef, undef, sub {return ${GTK}::StatusIcon::position_menu($menu_var, 0, 0, \$icon)}, [1, 1], 0, 0);";
+    <<"POPUP";
+$menu_var->popup(undef, undef, sub {
+    my (\$x, \$y, \@list) = ${GTK}::StatusIcon::position_menu($menu_var, 0, 0, \$icon);
+    (\$x, \$y) = \@_[1,2] if $CONFIG{popup_at_cursor};
+    (\$x, \$y, \@list);
+}, [1, 1], 0, 0);
+POPUP
 }
 
 sub generate_menu {
