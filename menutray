@@ -1,6 +1,6 @@
 #!/usr/bin/perl
-
-# Copyright (C) 2011-2017 Daniel "Trizen" Șuteu <echo dHJpemVueEBnbWFpbC5jb20K | base64 -d>.
+#
+# Copyright (C) 2010-2018 Daniel "Trizen" Șuteu <echo dHJpemVuQHByb3Rvbm1haWwuY29tCg== | base64 -d>.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,11 +14,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 
-# Program: menutray
+# Author: Daniel "Trizen" Șuteu
 # License: GPLv3
 # Created: 03 March 2011
-# Latest edit: 14 November 2017
+# Latest edit: 08 January 2018
 
 # Contributor(s):
 #   andrei-a-papou - https://github.com/andrei-a-papou
@@ -35,7 +36,7 @@ use Encode qw(encode_utf8 decode_utf8);
 use Linux::DesktopFiles 0.25;
 
 my $pkgname = 'menutray';
-my $version = '0.51';
+my $version = '0.52';
 my $GTK     = 'Gtk2';       # Version of GTK+
 
 my $depth = 0;              # current submenu depth
