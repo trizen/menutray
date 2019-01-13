@@ -504,7 +504,14 @@ sub popup_menu {
     <<"POPUP";
 $menu_var->popup(undef, undef, sub {
             my (\$x, \$y, \@list) = ${GTK}::StatusIcon::position_menu($menu_var, 0, 0, \$icon);
-            (\$x, \$y) = \@_[1,2] if $CONFIG{popup_at_cursor};
+            if ($CONFIG{popup_at_cursor}) {
+                (\$x, \$y) = \@_[1,2];
+                if (${\($GTK eq 'Gtk2' ? 1 : 0)}) {
+                    $menu_var->set_monitor(Gtk2::Gdk::Screen->get_default->get_monitor_at_point(\$x, \$y));
+                } else {
+                    $menu_var->set_monitor(Gtk3::Gdk::Screen::get_default()->get_monitor_at_point(\$x, \$y));
+                }
+            }
             (\$x, \$y, \@list);
         }, [1, 1], 0, 0);
 POPUP
