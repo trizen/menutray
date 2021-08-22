@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright (C) 2010-2019 Daniel "Trizen" Șuteu <echo dHJpemVuQHByb3Rvbm1haWwuY29tCg== | base64 -d>.
+# Copyright (C) 2010-2021 Daniel "Trizen" Șuteu <echo dHJpemVuQHByb3Rvbm1haWwuY29tCg== | base64 -d>.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 # Author: Daniel "Trizen" Șuteu
 # License: GPLv3
 # Created: 03 March 2011
-# Latest edit: 07 June 2019
+# Latest edit: 23 August 2021
 
 # Contributor(s):
 #   andrei-a-papou - https://github.com/andrei-a-papou
@@ -36,8 +36,8 @@ use Encode qw(encode_utf8 decode_utf8);
 use Linux::DesktopFiles 0.25;
 
 my $pkgname = 'menutray';
-my $version = '0.53';
-my $GTK     = 'Gtk2';       # Version of GTK+
+my $version = '0.54';
+my $GTK     = 'Gtk3';       # Version of GTK+
 
 my $depth = 0;              # current submenu depth
 my $menu  = '$menu';        # current submenu name
@@ -64,11 +64,10 @@ sub output_usage {
 usage: $0 [options]
 
 options:
-    -g    : generate a simple menu
-    -i    : generate a menu with icons
-    -u    : update the configuration file
-    -r    : regenerate the configuration file
-    -gtk3 : use Gtk3 instead of Gtk2
+    -g  : generate a simple menu
+    -i  : generate a menu with icons
+    -u  : update the configuration file
+    -r  : regenerate the configuration file
 
 other:
     -S <file>  : path to the schema.pl file
@@ -104,6 +103,7 @@ my $config_help = <<"HELP";
                             ],
 
 || ICON SETTINGS
+    | gtk_version         : The version of the Gtk library used for the menu. (default: 3)
     | icon_type           : Menu icon type (menu, dnd, small-toolbar, large-toolbar, button, dialog)
     | icon_size           : Icon size in pixels (only for absolute icon paths) (default: [16, 16])
     | missing_image       : Use this icon for missing icons (default: gtk-missing-image)
@@ -144,10 +144,6 @@ if (@ARGV) {
         }
         elsif ($arg eq '-o') {
             $menu_file = shift(@ARGV) // die "$0: option '-o' requires an argument!\n";
-        }
-        elsif ($arg eq '-gtk3' or $arg eq '--gtk3') {
-            $create_menu = 1;
-            $GTK         = 'Gtk3';
         }
         elsif ($arg eq '-h' or $arg eq '--help' or $arg eq '-?') {
             output_usage();
@@ -202,6 +198,7 @@ my %CONFIG = (
 #>>>
     },
 
+    gtk_version      => 3,
     tooltips         => 1,
     locale_support   => 1,
     popup_at_cursor  => 0,
@@ -257,6 +254,10 @@ my @valid_keys = grep exists $CONFIG{$_}, keys %$CONFIG;
 if ($CONFIG{VERSION} != $version) {
     $update_config = 1;
     $CONFIG{VERSION} = $version;
+}
+
+if ($CONFIG{gtk_version} == 2) {
+    $GTK = "Gtk2";
 }
 
 my $desk_obj = Linux::DesktopFiles->new(
@@ -396,7 +397,7 @@ sub push_app {
     foreach my $entry (@{$entries}) {
 
         my $item_var = '$app';
-        my $item     = "{\n" . new_item($item_var, $entry->{Name} // next) . system_command($item_var, $entry->{Exec});
+        my $item     = "{\n" . new_item($item_var, $entry->{Name} // next) . system_command($item_var, $entry->{Exec} // next);
 
         if ($CONFIG{tooltips} and defined($entry->{Comment})) {
             $item .= tooltip($item_var, $entry->{Comment});
@@ -449,7 +450,6 @@ sub regenerate_item {
     my $regenerate_exec = join(
                                ' ',
                                $^X, quotemeta(Cwd::abs_path($0)),
-                               ($GTK eq 'Gtk3' ? '-gtk3' : ()),
                                ($with_icons    ? '-i'    : '-g'),
                                '-C' => quotemeta(Cwd::abs_path($config_file)),
                                '-S' => quotemeta(Cwd::abs_path($schema_file)),

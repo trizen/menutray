@@ -3,12 +3,11 @@
 * Required dependencies:
 
     - perl>=5.14.0
-    - gtk2-perl ([Gtk2](https://metacpan.org/pod/Gtk2))
+    - perl-gtk3 ([Gtk3](https://metacpan.org/pod/Gtk3))
     - perl-data-dump ([Data::Dump](https://metacpan.org/pod/Data::Dump))
     - perl-linux-desktopfiles>=0.25 ([Linux::DesktopFiles](https://metacpan.org/pod/Linux::DesktopFiles))
 
 * Optional dependencies:
-    - perl-gtk3 ([Gtk3](https://metacpan.org/pod/Gtk3))
     - perl-file-desktopentry ([File::DesktopEntry](https://metacpan.org/pod/File::DesktopEntry))
 
 ### Installation process:
