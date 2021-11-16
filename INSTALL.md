@@ -19,7 +19,6 @@
 
 - to generate a new menu with icons, execute: `menutray -i`
 - to generate a simple menu, without icons, execute: `menutray -g`
-- for creating a Gtk3 menu, simply append `-gtk3` to one of the above commands.
 - to load an already generated menu, run `menutray` without any arguments.
 
 ### Locale support:

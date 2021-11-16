@@ -248,7 +248,7 @@ require $schema_file;
 require $config_file;
 
 # Remove invalid keys
-my @valid_keys = grep exists $CONFIG{$_}, keys %$CONFIG;
+my @valid_keys = grep { exists $CONFIG{$_} } keys %$CONFIG;
 @CONFIG{@valid_keys} = @{$CONFIG}{@valid_keys};
 
 if ($CONFIG{VERSION} != $version) {
@@ -417,13 +417,8 @@ APPEND
 
     begin_category($cat_name, $icon_name);
 
-    $generated_menu .= (
-                        join(
-                             '', map $_->[1], sort { $a->[0] cmp $b->[0] }
-                               map [lc($_) => $_], @menu_items
-                            )
-                          . end_category()
-                       );
+    $generated_menu .= join('', sort { lc($a) cmp lc($b) } @menu_items);
+    $generated_menu .= end_category();
 }
 
 sub add_item {
@@ -450,7 +445,7 @@ sub regenerate_item {
     my $regenerate_exec = join(
                                ' ',
                                $^X, quotemeta(Cwd::abs_path($0)),
-                               ($with_icons    ? '-i'    : '-g'),
+                               ($with_icons ? '-i' : '-g'),
                                '-C' => quotemeta(Cwd::abs_path($config_file)),
                                '-S' => quotemeta(Cwd::abs_path($schema_file)),
                                '-o' => quotemeta(Cwd::abs_path($menu_file)),
