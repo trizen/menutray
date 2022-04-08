@@ -342,7 +342,7 @@ sub select_icon {
     my ($var, $icon_name) = @_;
 
     if (defined($icon_name) and $icon_name ne q{}) {
-        if (chr ord $icon_name eq '/') {
+        if (substr($icon_name, 0, 1) eq '/') {
             return image_from_file($var, $icon_name);
         }
         else {

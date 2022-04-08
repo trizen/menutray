@@ -32,4 +32,4 @@ help:
 
 ----
 
-**Installation:** https://github.com/trizen/menutray/blob/master/INSTALL.md
+**Installation:** [INSTALL.md](./INSTALL.md)
