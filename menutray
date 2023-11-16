@@ -32,7 +32,7 @@ use 5.014;
 use warnings;
 
 use File::Spec qw();
-use Encode qw(encode_utf8 decode_utf8);
+use Encode     qw(encode_utf8 decode_utf8);
 use Linux::DesktopFiles 0.25;
 
 my $pkgname = 'menutray';
@@ -210,7 +210,7 @@ my %CONFIG = (
     menutray_title   => 'menutray',
     menutray_tooltip => 'Applications',
     VERSION          => $version,
-             );
+);
 
 sub dump_configuration {
     require Data::Dump;
@@ -265,7 +265,7 @@ my $desk_obj = Linux::DesktopFiles->new(
 
     categories => [map { exists($_->{cat}) ? $_->{cat}[0] : () } @$SCHEMA],
 
-    keys_to_keep => ['Name', 'Exec',
+    keys_to_keep => ['Name', 'Exec', 'Path',
                      ($with_icons       ? 'Icon'    : ()),
                      ($CONFIG{tooltips} ? 'Comment' : ()),
                      (
@@ -276,7 +276,7 @@ my $desk_obj = Linux::DesktopFiles->new(
                     ],
 
     case_insensitive_cats => 1,
-                                       );
+);
 
 my $comment        = '# # ' x 10;
 my $generated_menu = '';
@@ -357,7 +357,7 @@ sub begin_category {
     my ($cat_name, $icon_name) = @_;
 
     $generated_menu .= <<"CATEGORY_HEADER" . new_item('$app', $cat_name);
-\n    $comment\U$cat_name\E $comment
+\n    $comment\U${\decode_utf8($cat_name)}\E $comment
 {
     my \$menu$depth = '${GTK}::Menu'->new;
 CATEGORY_HEADER
@@ -396,8 +396,19 @@ sub push_app {
     my @menu_items;
     foreach my $entry (@{$entries}) {
 
+        my $name = $entry->{Name} // next;
+        my $exec = $entry->{Exec} // next;
+
+        # Support for the Path key
+        if (defined($entry->{Path}) and $entry->{Path} ne '') {
+            my $path = decode_utf8($entry->{Path});
+            $exec = decode_utf8($exec);
+            $exec = "$^X -e 'chdir(\$ARGV[0]) && exec(\$ARGV[1])' \Q$path\E \Q$exec\E";
+            $exec = encode_utf8($exec);
+        }
+
         my $item_var = '$app';
-        my $item     = "{\n" . new_item($item_var, $entry->{Name} // next) . system_command($item_var, $entry->{Exec} // next);
+        my $item     = "{\n" . new_item($item_var, $name) . system_command($item_var, $exec);
 
         if ($CONFIG{tooltips} and defined($entry->{Comment})) {
             $item .= tooltip($item_var, $entry->{Comment});
@@ -672,7 +683,7 @@ FOOTER
         die "$0: unbalanced beg/end submenus! (depth: $depth)\n";
     }
 
-    open my $menu_fh, '>:encoding(UTF-8)', $menu_file
+    open my $menu_fh, '>:utf8', $menu_file
       or die "$0: Can't open file '${menu_file}' for write: $!";
     print $menu_fh $generated_menu;
     close $menu_fh;
